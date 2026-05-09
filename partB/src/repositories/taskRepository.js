@@ -16,8 +16,44 @@ const taskRepository = {
     return this.findById(result.lastInsertRowid);
   },
 
-  findAll() {
-    return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all();
+findAll(filters = {}) {
+    let query = 'SELECT * FROM tasks WHERE 1=1';
+    const params = [];
+
+    if (filters.search) {
+      query += ' AND (title LIKE ? OR description LIKE ?)';
+      const searchPattern = `%${filters.search}%`;
+      params.push(searchPattern, searchPattern);
+    }
+
+    if (filters.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+
+    if (filters.priority) {
+      query += ' AND priority = ?';
+      params.push(filters.priority);
+    }
+
+    if (filters.due_before) {
+      query += ' AND due_date <= ?';
+      params.push(filters.due_before);
+    }
+
+    if (filters.due_after) {
+      query += ' AND due_date >= ?';
+      params.push(filters.due_after);
+    }
+
+    const sortBy = filters.sort_by || 'created_at';
+    const allowedSorts = ['created_at', 'due_date', 'priority', 'title'];
+    const safeSortBy = allowedSorts.includes(sortBy) ? sortBy : 'created_at';
+    
+    const sortOrder = filters.sort_order === 'asc' ? 'ASC' : 'DESC';
+    query += ` ORDER BY ${safeSortBy} ${sortOrder}`;
+
+    return db.prepare(query).all(...params);
   },
 
   findById(id) {

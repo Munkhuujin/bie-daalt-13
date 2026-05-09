@@ -28,8 +28,14 @@ const taskService = {
     return taskRepository.create(data);
   },
 
-  getAllTasks() {
-    return taskRepository.findAll();
+  getAllTasks(filters = {}) {
+    if (filters.status && !['todo', 'in_progress', 'done'].includes(filters.status)) {
+      throw new ValidationError('Invalid status filter');
+    }
+    if (filters.priority && !['low', 'medium', 'high'].includes(filters.priority)) {
+      throw new ValidationError('Invalid priority filter');
+    }
+    return taskRepository.findAll(filters);
   },
 
   getTaskById(id) {

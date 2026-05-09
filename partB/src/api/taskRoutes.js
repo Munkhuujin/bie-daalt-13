@@ -16,8 +16,24 @@ router.post('/', (req, res) => {
 });
 
 router.get('/', (req, res) => {
-  const tasks = taskService.getAllTasks();
-  res.json(tasks);
+  try {
+    const filters = {
+      search: req.query.search,
+      status: req.query.status,
+      priority: req.query.priority,
+      due_before: req.query.due_before,
+      due_after: req.query.due_after,
+      sort_by: req.query.sort_by,
+      sort_order: req.query.sort_order
+    };
+    const tasks = taskService.getAllTasks(filters);
+    res.json(tasks);
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.get('/:id', (req, res) => {
