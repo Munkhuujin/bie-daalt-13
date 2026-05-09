@@ -1,4 +1,5 @@
 const taskRepository = require('../repositories/taskRepository');
+const dateHelper = require('../utils/dateHelper');
 
 class ValidationError extends Error {
   constructor(message) {
@@ -40,14 +41,12 @@ const taskService = {
 
   getTaskById(id) {
     const task = taskRepository.findById(id);
-    if (!task) {
-      throw new NotFoundError(`Task ${id} not found`);
-    }
+    if (!task) throw new NotFoundError(`Task ${id} not found`);
     return task;
   },
 
   updateTask(id, updates) {
-    this.getTaskById(id); // Throws if not found
+    this.getTaskById(id);
     if (updates.priority && !['low', 'medium', 'high'].includes(updates.priority)) {
       throw new ValidationError('Invalid priority');
     }
@@ -58,8 +57,25 @@ const taskService = {
   },
 
   deleteTask(id) {
-    this.getTaskById(id); // Throws if not found
+    this.getTaskById(id);
     return taskRepository.delete(id);
+  },
+
+  getOverdueTasks() {
+    const allTasks = taskRepository.findAll();
+    return allTasks.filter(t => 
+      dateHelper.isOverdue(t.due_date) && t.status !== 'done'
+    );
+  },
+
+  getTodayTasks() {
+    const allTasks = taskRepository.findAll();
+    return allTasks.filter(t => dateHelper.isToday(t.due_date));
+  },
+
+  getThisWeekTasks() {
+    const allTasks = taskRepository.findAll();
+    return allTasks.filter(t => dateHelper.isThisWeek(t.due_date));
   }
 };
 

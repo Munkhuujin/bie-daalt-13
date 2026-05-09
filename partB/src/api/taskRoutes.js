@@ -36,6 +36,18 @@ router.get('/', (req, res) => {
   }
 });
 
+router.get('/views/overdue', (req, res) => {
+  res.json(taskService.getOverdueTasks());
+});
+
+router.get('/views/today', (req, res) => {
+  res.json(taskService.getTodayTasks());
+});
+
+router.get('/views/this-week', (req, res) => {
+  res.json(taskService.getThisWeekTasks());
+});
+
 router.get('/:id', (req, res) => {
   try {
     const task = taskService.getTaskById(parseInt(req.params.id));
