@@ -1,0 +1,319 @@
+openapi: 3.0.0
+info:
+  title: Personal Task Tracker API
+  description: REST API for single-user, local-first task management
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/tasks:
+    post:
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Validation error
+
+    get:
+      summary: List tasks with optional filters
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search in title and description
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [todo, in_progress, done]
+        - in: query
+          name: priority
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - in: query
+          name: due_before
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: due_after
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, due_date, priority, title]
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+  /api/tasks/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get a task by ID
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+    put:
+      summary: Update a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '200':
+          description: Task updated
+        '404':
+          description: Task not found
+    delete:
+      summary: Delete a task
+      responses:
+        '204':
+          description: Task deleted
+        '404':
+          description: Task not found
+
+  /api/tasks/views/overdue:
+    get:
+      summary: Get overdue tasks
+      responses:
+        '200':
+          description: Tasks with due_date before today
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+  /api/tasks/views/today:
+    get:
+      summary: Get today's tasks
+      responses:
+        '200':
+          description: Tasks due today
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+  /api/tasks/views/this-week:
+    get:
+      summary: Get this week's tasks
+      responses:
+        '200':
+          description: Tasks due this week
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+
+  /api/labels:
+    post:
+      summary: Create a label
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelInput'
+      responses:
+        '201':
+          description: Label created
+        '400':
+          description: Duplicate or invalid label
+    get:
+      summary: List all labels
+      responses:
+        '200':
+          description: List of labels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Label'
+
+  /api/labels/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get a label by ID
+      responses:
+        '200':
+          description: Label found
+        '404':
+          description: Label not found
+    delete:
+      summary: Delete a label
+      responses:
+        '204':
+          description: Label deleted
+
+  /api/labels/tasks/{taskId}/labels/{labelId}:
+    parameters:
+      - in: path
+        name: taskId
+        required: true
+        schema:
+          type: integer
+      - in: path
+        name: labelId
+        required: true
+        schema:
+          type: integer
+    post:
+      summary: Attach a label to a task
+      responses:
+        '201':
+          description: Label attached
+    delete:
+      summary: Detach a label from a task
+      responses:
+        '204':
+          description: Label detached
+
+  /api/labels/tasks/{taskId}/labels:
+    parameters:
+      - in: path
+        name: taskId
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get all labels for a task
+      responses:
+        '200':
+          description: List of labels for the task
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+
+    TaskInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        due_date:
+          type: string
+          format: date
+
+    Label:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+
+    LabelInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+          example: "#ff0000"
